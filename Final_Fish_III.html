@@ -1,0 +1,297 @@
+<!doctype html>
+<html>
+<head>
+<title>Final Fish Game</title>
+</head>
+<body>
+<canvas id="ttt"style="border:10px solid black;position:absolute;background:#AFEEEE" height="900px" width="1800px">
+</canvas>
+<canvas id="hhh"style="border:10px solid black;position:absolute" height="900px" width="1800px">
+</canvas>
+<canvas id="food"style="border:10px solid black;position:absolute" height="900px" width="1800px">
+</canvas>
+<canvas id="shark"style="border:10px solid black;position:absolute" height="900px" width="1800px">
+</canvas>
+<style type="text/css">
+@font-face
+{font-family: abc;
+src=url(font.ttf);
+}
+</style>
+<script type="text/javascript" src="vector.js">
+</script>
+<script type="text/javascript" src="forces.js">
+</script>
+<script type="text/javascript" src="fish.js">
+</script>
+<script type="text/javascript" src="shark.js">
+</script>
+<script type="text/javascript" src="sharkframe.js">
+</script>
+<script type="text/javascript" src="frames.js">
+</script>
+<script type="text/javascript" src="ball.js">
+</script>
+<script type="text/javascript">
+
+var canvas=document.getElementById("ttt");
+//alert(canvas);
+var context=canvas.getContext("2d");
+//alert(context);
+var canvas1=document.getElementById("hhh");
+//alert(canvas1);
+var context1=canvas1.getContext("2d");
+//alert(context1);
+var canvas2=document.getElementById("food");
+//alert(canvas2);
+var context2=canvas2.getContext("2d");
+//alert(context2);
+var canvas3=document.getElementById("shark");
+//alert(canvas3);
+var context3=canvas3.getContext("2d");
+//alert(context3);
+var t,t0,dt,ttime=0,i,bubbles;
+var rect=canvas2.getBoundingClientRect();
+var bubblearr=new Array();
+var foodarr=new Array();
+t0=new Date().getTime();
+var bubbleobj,food,fishHead=new vector2D(0,0);
+var bubblearray=new Array();
+var i,life=3,an;
+var radius,vol, rho=1,rhob=0.5,volb, mass,t0, t1;
+var dt;
+var nob=50;
+var kfac=0.01;
+var acc=new vector2D(0,0);
+var force=new vector2D(0,0);
+var windvel=new vector2D(0,0);
+var rotation=0,unit=new vector2D(0,0),oldrotation=0,turn1=false,turn2=false;
+var x0=0.5*canvas.width;
+var y0=0.5*canvas.height,min=0,sec=0;
+var scale=100,counter=0,score=0;
+var fish=new FISH(20,0.2,0.2);
+var shark=new SHARK(20,0.4,0.4);
+shark.pos2D=new vector2D(1000,500);
+shark.drawShark(context3);
+
+//EVENT LISTENERS
+
+function Event(){
+addEventListener("mousedown", DOWN,false);
+}
+function Touch(){
+addEventListener("touchstart",Start,false);
+addEventListener("touchmove",touchmove,false);
+}
+
+
+//FOOD
+function Food()
+{for(i=0;i<30;i++)
+{food=new BALL("brown",8,0,0,true);
+food.pos2D=new vector2D(Math.random()*1800,Math.random()*900);
+food.velo2D=new vector2D(0,Math.random()*100%10);
+foodarr.push(food);
+food.drawball(context2);
+}
+}
+
+//Bubble
+function Bubbles()
+{for (i=0;i<200;i++)
+{radius=10;
+vol=1.33*Math.PI*radius*radius*radius;
+mass=rho*vol;
+bubbles=new BALL("#40E0D0",radius,mass,0,true);
+bubbles.pos2D=new vector2D(Math.random()*10000%1800,850);
+bubbles.velo2D=new vector2D((Math.random()-0.5)*20,(Math.random()-0.5)*20);
+bubblearr.push(bubbles);
+bubbles.drawball(context);
+
+}
+}
+
+//Fish
+function Fish()
+{fish.pos2D=new vector2D(400,600);
+fish.velo2D=new vector2D(100,0);
+fish.drawFish(context1);
+}
+
+//INIT
+function init()
+{Bubbles();
+Fish();
+Food();
+Event();
+Touch();
+animation();
+}
+function animation(){
+an=requestAnimationFrame(animation);
+time();
+}
+function time()
+{
+t1=new Date().getTime();
+dt=(t1-t0)*0.001;
+t0=t1;
+ttime=ttime+dt;
+sec=(ttime).toFixed(2);
+min=parseInt(sec/60);
+move();
+
+}
+
+//MOVE
+function move()
+{context2.clearRect(0,0,canvas2.width,canvas2.height);
+
+context.clearRect(0,0,canvas.width,canvas.height);
+//context3.clearRect(0,0,canvas3.width,canvas3.height);
+//context1.clearRect(0,0,canvas1.width,canvas1.height);
+for(i=0;i<200;i++)
+{var bubbles=bubblearr[i];
+updateforce(bubbles);
+updateacc(bubbles);
+updatevelo(bubbles);
+updatepos(bubbles);
+}
+counter++;
+if(counter%10==0)
+{
+context1.clearRect(0,0,canvas1.width,canvas1.height);
+var unit=fish.velo2D.unit();
+var angle=Math.atan2(unit.y,unit.x);
+context1.save();
+context1.translate(fish.x,fish.y);
+context1.rotate(angle);
+context1.translate(-fish.x,-fish.y);
+fish.drawFish(context1);
+
+context1.restore();
+fish.pos2D=fish.pos2D.addscaled(fish.velo2D,dt);
+//fish.drawFish(context1);}
+//console.log("ANGLE:::"+angle); 
+}
+shark.velo2D=(fish.pos2D.subtract(shark.pos2D)).unit().multiply(90);
+shark.pos2D=shark.pos2D.addscaled(shark.velo2D,dt);
+if(counter%10==0)
+{context3.clearRect(0,0,canvas3.width,canvas3.height);
+var unitS=shark.velo2D.unit();
+var angleS=Math.atan2(unitS.y,unitS.x);
+context3.save();
+context3.translate(shark.x,shark.y);
+context3.rotate(angleS);
+context3.translate(-shark.x,-shark.y);
+shark.drawShark(context3);
+context3.restore();
+
+}
+
+
+for(i=0;i<30;i++)
+{food=foodarr[i];
+food.drawball(context2);
+}
+for(i=0;i<30;i++)
+{food=foodarr[i];
+var tempfood=fish.head.subtract(food.pos2D.subtract(new vector2D(rect.left,rect.top)));
+//console.log(tempfood.length());
+if(tempfood.length()<50)
+{
+food.pos2D=new vector2D(Math.random()*1000%1800,600);
+//console.log("ssst");
+score++;
+//console.log(score);
+}
+}
+context2.font="40px abc";
+var gradient=context2.createLinearGradient(0,0,canvas2.width,0);
+gradient.addColorStop("0","yellow");
+gradient.addColorStop("0.5","blue");
+gradient.addColorStop("1.0","red");
+// Fill with gradient
+context2.fillStyle=gradient;
+context2.fillText("SCORE: "+score*100,10,90);
+context2.fillText("TOTAL TIME "+min+":"+sec,1300,90);
+context2.fillText("LIFE "+life,650,90);
+console.log(shark.velo2D);
+if(shark.head.subtract(fish.pos2D).length()<70)
+{if(life>=0)
+{life--;
+fish.pos2D=new vector2D(100,10);
+fish.velo2D=new vector2D(0,0);
+shark.velo2D=new vector2D(600,400);
+}
+else{
+cancelAnimationFrame(an);
+context.clearRect(0,0,canvas.width,canvas.height);
+context1.clearRect(0,0,canvas1.width,canvas1.height);
+context2.clearRect(0,0,canvas2.width,canvas2.height);
+context3.clearRect(0,0,canvas3.width,canvas3.height);
+context2.font="100px abc";
+context2.fillText("GAME OVER",700,500);
+context2.fillStyle="#AFEEEE";
+}
+}
+
+}
+
+//BUBBLE SECTION
+function updateforce(bubble){
+var g=10;
+volb=bubble.ma/rhob;
+var gravity=Forces.constantGravity(bubble.ma,g);
+var upthrust=Forces.upthrust(rho,volb,g);
+var k=Math.PI*bubble.ra*bubble.ra*kfac;
+windvel=new vector2D(50+(Math.random()-0.5)*1000,(Math.random()-0.5)*1000);
+var relwind=windvel.subtract(bubble.velo2D);
+var wind=Forces.Drag(relwind,-k);
+force=Forces.add([gravity,upthrust,wind]);
+}
+
+function updateacc(bubbles){
+acc=force.multiply(1/bubbles.ma);
+
+}
+
+function updatevelo(bubbles){
+bubbles.velo2D=bubbles.velo2D.addscaled(acc,dt);
+}
+
+function updatepos(bubbles){
+bubbles.pos2D=bubbles.pos2D.addscaled(bubbles.velo2D,dt);
+bubbles.drawball(context);
+if((bubbles.x>canvas.width)||(bubbles.y>canvas.height)||(bubbles.x<0)||(bubbles.y<0))
+bubbles.pos2D=new vector2D(Math.random()*10000%1800,Math.random()*1000%900);
+}
+
+//Event Listener Section
+function DOWN(evt)
+{
+var tempvelo=(new vector2D(evt.clientX,evt.clientY)).subtract(fish.pos2D);
+fish.velo2D=tempvelo.unit().multiply(1500);
+//console.log("down");
+}
+
+function Start(evt)
+{
+var touch=evt.touches[0];
+var tempvelo=(new vector2D(touch.clientX,touch.clientY)).subtract(fish.pos2D);
+fish.velo2D=tempvelo.unit().multiply(1500);
+//console.log(fish.velo2D);
+}
+function touchmove(evt)
+{var touch=evt.touches[0];
+var tempvelo=(new vector2D(touch.clientX,touch.clientY)).subtract(fish.pos2D);
+fish.velo2D=tempvelo.unit().multiply(1500);
+//console.log("touchmove");
+}
+
+init();
+
+
+</script>
+</body>
+</html>
